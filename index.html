@@ -1,0 +1,117 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Playlist YouTube</title>
+    <style>
+        body.dark-mode {
+            background-color: #222;
+            color: #fff;
+        }
+
+        #video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* Rapport 16:9 (56.25 = 9/16 * 100) */
+            height: 0;
+            overflow: hidden;
+        }
+
+        #video-player {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body class="dark-mode">
+    <form>
+        <textarea id="playlist-input" rows="10" cols="50"></textarea>
+        <button type="submit">Soumettre</button>
+    </form>
+    <div id="video-container">
+        <iframe id="video-player" src="" frameborder="0" allowfullscreen></iframe>
+    </div>
+    <div id="playlist-container"></div>
+
+    <script>
+        function extractVideoId(url) {
+            var videoId = "";
+
+            if (url.includes("youtube.com")) {
+                if (url.includes("list=")) {
+                    var listParam = url.split("list=")[1];
+                    videoId = "PLAYLIST:" + listParam;
+                } else {
+                    videoId = url.split("v=")[1];
+                    var ampersandPosition = videoId.indexOf("&");
+                    if (ampersandPosition != -1) {
+                        videoId = videoId.substring(0, ampersandPosition);
+                    }
+                }
+            } else if (url.includes("youtu.be")) {
+                videoId = url.split("/").pop();
+            }
+
+            return videoId;
+        }
+
+        document.querySelector('form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var playlistInput = document.getElementById('playlist-input').value;
+            var urls = playlistInput.split("\n");
+
+            var videoIds = [];
+            var playlistLinks = [];
+
+            for (var i = 0; i < urls.length; i++) {
+                var url = urls[i].trim();
+                if (url != "") {
+                    var videoId = extractVideoId(url);
+                    videoIds.push(videoId);
+
+                    var link = document.createElement('a');
+                    link.href = "#";
+                    link.textContent = "Vidéo " + (i+1);
+                    link.dataset.videoId = videoId;
+                    playlistLinks.push(link);
+                }
+            }
+
+            var playlistContainer = document.getElementById('playlist-container');
+            playlistContainer.innerHTML = "";
+            for (var i = 0; i < playlistLinks.length; i++) {
+                playlistContainer.appendChild(playlistLinks[i]);
+                if (i < playlistLinks.length - 1) {
+                    playlistContainer.appendChild(document.createTextNode(" | "));
+                }
+            }
+
+            for (var i = 0; i < playlistLinks.length; i++) {
+                playlistLinks[i].addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var videoId = e.target.dataset.videoId;
+
+                    if (videoId.startsWith("PLAYLIST:")) {
+                        var playlistId = videoId.split("PLAYLIST:")[1];
+                        document.getElementById('video-player').src = "https://www.youtube.com/embed?list=" + playlistId;
+                    } else {
+                        document.getElementById('video-player').src = "https://www.youtube.com/embed/" + videoId;
+                    }
+                });
+            }
+
+            if (videoIds.length > 0) {
+                var firstVideoId = videoIds[0];
+                if (firstVideoId.startsWith("PLAYLIST:")) {
+                    var firstPlaylistId = firstVideoId.split("PLAYLIST:")[1];
+                    document.getElementById('video-player').src = "https://www.youtube.com/embed?list=" + firstPlaylistId;
+                } else {
+                    document.getElementById('video-player').src = "https://www.youtube.com/embed/" + firstVideoId;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
